@@ -1,0 +1,25 @@
+
+export CODE_PATH=$HOME/code
+cd $CODE_PATH
+
+# install avocado and testcase git repo for libvirt
+git clone https://github.com/avocado-framework/avocado.git
+git clone https://github.com/avocado-framework/avocado-vt.git
+git clone https://github.com/autotest/tp-libvirt
+
+# configure avocado repo
+cd $CODE_PATH/avocado
+pip install -r requirements-selftests.txt --upgrade
+python setup.py develop
+
+# configure avocado-vt repo
+cd $CODE_PATH/avocado-vt
+pip install -r requirements.txt --upgrade
+sed -i -e "s%uri:.*%uri: file://$CODE_PATH/tp-libvirt%" $CODE_PATH/avocado-vt/test-providers.d/io-github-autotest-libvirt.ini
+python setup.py develop
+
+# bootstrap avocado-vt
+python setup.py develop
+avocado vt-bootstrap --vt-type libvirt --vt-no-downloads
+
+# after this replacement, you can just modify the code in $CODE_PATH/tp-libvirt, and your change will take effect directly (This is only for changes in .py files. Your changes in .cfg file won’t take effect directly. You have rerun bootstrap each time you modified .cfg file
