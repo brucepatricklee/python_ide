@@ -20,3 +20,15 @@ git merge [name] - merge [name] branch to current branch
 git push [remote_repo] [local_branch]:[remote_branch] - create a remote branch based on local branch
 git push [remote_repo] :[remote_branch] - delete a remote branch
 
+Git patch
+---------
+git format-patch xxxxx
+git am xxx
+
+git hub workflow
+----------------
+
+git push [remote_repo] --force HEAD:[remote_branch] - update git review code
+
+wget --output-document=fix.patch https://github.com/avocado-framework/avocado-vt/pull/1796.patch
+

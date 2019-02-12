@@ -140,7 +140,14 @@ about vt-bootstrap - avocado-vt/virttest/bootstrap.py
         - verify selinux
     - verify/download guest image(--vt-no-downloads)
 
- 
+5, check the testcase before send PR
+
+inspekt style xxx
+inspekt lint xxx
+inspekt indent xxx
+
+
+
 
 Useful modules when creating avocado-vt case
 --------------------------------------------
@@ -162,9 +169,53 @@ libvirt test case common functions
 
 
 
+add a tp-libvirt test case
+--------------------------
+
+1. create jira task of polarin mannual testcase
+a. select a mannual testcase in polarin
+b. find testcase in caselink via polarin testcase ID, such as RHEL7-17891
+c. click "Create Automated Request" to create corresponding jira task to track your automation task
+d. file jira task when you code is merged into git hub
 
 
-tp-libvirt framework ????????????????
---------------------
+
+
+
+
+
+
+
+
+
 1. match the auto test case with manual case for a detailed test steps
+
+
+# how to add a feature
+features_xml = vm_xml.VMFeaturesXML()
+if feature == 'hpt':
+    features_xml.hpt_resizing = value
+elif feature == 'htm':
+    features_xml.htm = value
+vmxml.features = features_xml
+vmxml.sync()
+
+# how to del and add a device
+    memballoon_model = params.get("memballoon_model", "")
+    if memballoon_model:
+        vm.destroy()
+        vmxml.del_device('memballoon', by_tag=True)
+        memballoon_xml = vmxml.get_device_class('memballoon')()
+        memballoon_xml.model = memballoon_model
+        vmxml.add_device(memballoon_xml)
+        logging.info(memballoon_xml)
+        vmxml.sync()
+        vm.start()
+
+# how to set cputune xml element
+        cputune = vm_xml.VMCPUTuneXML()
+        cputune.vcpupins = [{'vcpu': str(vcpu), 'cpuset': cpu_list}]
+        vmxml = vm_xml.VMXML.new_from_inactive_dumpxml(vm.name)
+        vmxml.cputune = cputune
+        vmxml.sync()
 

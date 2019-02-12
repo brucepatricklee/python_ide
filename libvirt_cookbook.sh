@@ -19,4 +19,10 @@ virt-clone - clone and existing VM
 virt-image - creating VM from XML
 virt-convert - convert VM from one format to another
 
+2, check the testcase before send PR
+
+inspekt style xxx
+inspekt lint xxx
+inspekt indent xxx
+
 
