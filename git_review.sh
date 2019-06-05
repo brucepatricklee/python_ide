@@ -32,3 +32,7 @@ git push [remote_repo] --force HEAD:[remote_branch] - update git review code
 
 wget --output-document=fix.patch https://github.com/avocado-framework/avocado-vt/pull/1796.patch
 
+code sytle check
+----------------
+
+inspekt checkall --disable-style E501,E265,W601,W605,E402,E722,E741 --no-license-check
