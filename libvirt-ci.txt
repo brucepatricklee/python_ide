@@ -1,0 +1,344 @@
+
+Redhat Beaker Usage
+===================
+
+1. set beaker env
+    - reference page
+        https://docs.engineering.redhat.com/display/HTD/beaker.engineering.redhat.com+User+Guide
+    - download internal beaker repo file
+        #curl -o /etc/yum.repos.d/beaker-client.repo https://download.eng.bos.redhat.com/beakerrepos/beaker-client-RedHatEnterpriseLinux.repo
+    - install packages
+        #yum install beaker-client beaker-redhat
+    - registration in beaker with Kerberos password
+        #kinit jil@REDHAT.COM
+    - Verify that the bkr command works
+        #bkr whoami
+        {'username': 'dcallagh', 'email_address': 'dcallagh@redhat.com'}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+1. create a jenkins public key in target server
+[root@rhel7 ~]# cat .ssh/authorized_keys
+ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAnDTpLaJrrmEyYpT0BkAIOI/7ym46gaQJRykdV5FHyft8ejA18sL3IHRpO2lrsCFGfEj5U+VuxePKwvsnhbBHlXHmpcYKYuo8AmlUwNLGjGXqHNtsP5qjurSBhPycJaA/Q4ZDMwb/PGoPABVoRnyM+J0E9XIT3TTz3TL2BBpR+gAGs/CaNpi4DtkNWCHSr/HFBXp6FbZBjjRr7HLIlv/GyTxlb/SnLxeLX1TnYK7DS32oUIj2NdFWxDQ/jn983Eluwc7WYi+ZvdjEoEI7b1VDHR3uNuHDU3VZNCheTswPRNnl2wcAC3AevAsCHS6HPSMM0nfkWvzOYl2Ro8PvXdi4Dw==
+
+2. log in jenkins web page to trig a jenkins job to install libvirt-ci environment
+    - login jenkins single-provision page and configure the jenkins task
+    https://libvirt-jenkins.rhev-ci-vms.eng.rdu2.redhat.com/job/single-provision/
+    id: jil
+    passwd: kerberos passwd
+    
+    - configure the single provision page to launch the setting of libvirt-ci env job
+        click "Build with Parameters"
+        fill out the form as follows:
+            TARGET_SLAVE jil_rhel7/rhel8
+            LIBVIRT_CI_BRANCH master
+            PROVISION_TARGET bkr/10.66.5.24
+            PROVISION_VERSION 7.6/8.0
+            PROVISION_PRODUCT RHEL
+            PROVISION_VIRT_MODULE_STREAM rhel/8.0.0
+
+3. rerun failed Jenkins testrun in the provisioned machine
+
+    - select a JIRA issue and open Jenkins log via Jenkin link in the comment of JIRA issue
+    - copy the Jenkins job and change the following parameters:
+        NODE_LABEL jil_rhel8
+        CI_ONLY
+
+
+
+key concepts about Libvirt CI
+----------------------------
+
+RHEL6 qemu-kvm
+RHEL7 qemu-kvm/qemu-kvm-rhev
+RHEL8 qemu-kvm on slow train/fast train
+
+https://gitlab.cee.redhat.com/libvirt-auto/libvirt-ci.git
+
+
+
+config/blacklist.yaml
+config/jobs.yaml
+
+
+
+
+
+Red Hat Enterprise Linux
+------------------------
+
+8.0.1 TES 6.12 - 7.23
+
+8.1.0 DEV/TES 2.13 - 9.11
+
+
+
+Red Hat Enterprise Linux Advanced Virtualization
+------------------------------------------------
+Red Hat Enterprise Linux Advanced Virtualization is one of the technologies that enables Red Hat’s virtualization products:
+    Red Hat OpenStack, Container Network Virtualization and Red Hat Virtualization
+
+RHEL-AV 8.0.1 - TES 6.12 - 7.12
+
+RHEL-AV 8.1.0 - DEV/TES 5.16 - 8.14
+              - TES 9.3 - 11.6
+
+datagrepper - for tree message
+    https://datagrepper.engineering.redhat.com/raw?topic=/topic/VirtualTopic.eng.rtt.ci
+    RTT  - release test team
+    - job-trigger --> image build
+    - send email
+
+
+brew-watcher
+    - MBS
+    https://mbs.engineering.redhat.com/module-build-service/1/module-builds/?name=virt
+        - repo-updater
+            - build private repo
+            - send mail
+            - send message to job-trigger
+        - gating job
+            - job-trigger
+
+osci dashboard - http://dashboard.osci.redhat.com/#/search/redhat-modules
+
+gating
+    - libvirt libvirt-python
+    - module
+
+beaker
+    - beaker python2.6 
+    - 
+
+PSI - US
+    - openshift
+    - openstack
+
+openshift - OCP - beijing
+    - metadash
+    - jenkins node
+
+
+
+
+jenkins
+-------
+
+provision + runtest + teardown
+
+metadash beaker checksum
+
+
+
+Libvirt-ci Good Practice
+------------------------
+1. add usb test run into libvirt jobs
+    in libvirt-ci/config/jobs.yaml
+        a. add job name
+        jobs:
+            libvirt:
+                function:
+                    usb
+        b. only schedule usb test on x86 arch
+        - when: test.startswith('libvirt.function.usb')
+          exclude:
+              - arch == 's390x'
+              - arch == 'ppc64le'
+              - arch == 'aarch64'
+        c. only schedule usb test on a dedicated machine for usb case
+        - when: test.startswith('libvirt.function.usb')
+          location: 'dell-per740-08.lab.eng.pek2.redhat.com'
+          only: |
+              usb_device.passthrough.vid_pid
+              usb_device.passthrough.bus_dev
+              usb_device.redirdev.spicevmc
+              usb_device.redirdev.tcp
+          feature: 'usb'
+    in job_trigger/config/jobs.yaml
+        a. add job name
+        jobs:
+            libvirt:
+                function:
+                    usb
+        b. only schedule usb test on x86 arch
+        - when: test.startswith('libvirt.function.usb')
+          exclude:
+              - arch == 's390x'
+              - arch == 'ppc64le'
+              - arch == 'aarch64'
+    in job_trigger/job_trigger.py
+        a. Do not trigger job in backend, so add into _validate_job
+        def _validate_job
+            if job['job_data']['job_name'] in ['function-usb']
+
+2. add a jenkins job parameter - PROVISION_VIRT_MODULE_NAME
+-----------------------------------------------------------
+
+step one: change data file
+----------------------------
+    1. add jenkins parameter provision-virt-module-name
+    in libvirt_ci/data/jobs/macros/common/parameters.yaml
+    - parameter:
+      name: provision-virt-module-name
+      parameters:
+        - string:
+            name: PROVISION_VIRT_MODULE_NAME
+            default: '{default}'
+            description: |
+                RHEL-8 virt module name selection
+    - parameter:
+      name: provision
+      parameters:
+      ...
+        - provision-virt-module-name:
+            default: '{provision-virt-module-name}'
+
+    2. set the parameter of provision job
+    in libvirt_ci/data/jobs/provision.yaml
+    parameters:
+        - provision:
+            provision-virt-module-name: '{virt_module_name}'
+
+    3. set the parameter of image build job
+    in libvirt_ci/data/jobs/image_builder.yaml
+    - job-group:
+        virt_module_name: ''
+    
+    4. set the parameter of package build job
+    in libvirt_ci/data/jobs/package_builder.yaml
+    - job-group:
+        virt_module_name: ''
+
+    5. change the shell cmd to install & enable virt module
+    in libvirt_ci/data/kickstarts/guest-RHEL-8.cfg
+
+step two: change config file
+    1. provision job parameter
+    in libvirt_ci/config/jobs.yaml
+    # Provision related default parameters
+    - 
+      virt_module_name:''
+
+
+step three: change command file
+
+    1. change the way to create module repo
+    in libvirt_ci/yum_repos.py
+    def generate_virt_module_repo
+
+    2. add module_name to provision task
+    in libvirt_ci/commands/provision.py
+        -  use module stream and name to generate virt module repo
+        -  add module name as parameters of test_env_group
+
+
+3. How a parameter in jenkins job is defined and used?
+
+    1. config/jobs.yaml, end user set the value of "Test runner related default parameters" and "jobs related parameters"
+    2. ./data/jobs/provision.yaml + config/jobs.yaml --> jenkins job parameter 
+
+    3. JJB use jenkins job parameter + ./data/jobs/macros/common/parameters.yaml --> every jenkins job
+
+    4. when jenkins job is scheduled to run, the jenkins job parameter is set to env
+
+    5. command file(e.g. provision.py or beaker.py) deal with the system env and default parameters and run task
+
+
+4. minimal available message
+
+{"product": "RHEL", "bkr_info": {"distro_tags": ["RTT_PASSED", "RTT_PASSED_PRIMARY"], "distro_name": "RHEL-8.0.1-updates-20190709.0"}, "arches": ["aarch64", "x86_64", "s390x", "ppc64le"], "version": "8.0", "build": "RHEL-8.0.1-updates-20190709.0"}
+
+
+5. Libvirt CI microservice main tasks list:
+    brew watcher/scan_new_module
+        1. monitor MBS web page to get new virt module info
+        2. pass "gating" job to job-trigger/trigger_job service if new virt module arrived
+        3. send module info to repo-updater/module_update service if new virt module arrived
+    brew watcher/update_module_repo
+        0. do nothing if the module status in metadata/Modules is set
+        1. send module info to repo-updater/module_update service when the status is cleaned manually in libvirt-ci metadata
+        module info:
+            columns from metadata/Modules
+            "packages":pkgs - virt module package nvr list based on cmd "brew latest-build --all --quiet module_name"
+            "mbs_id":mbs_id - mbs items/id
+            "extra_params"extra_params - PROVISION and RESOURCE_PREVISION VERSION 
+
+
+    brew watcher/check_packages_status
+        0. get packages list that members and groups are watching
+        1. get the package info of all packages based on the brew tag(from metadate "Brew Tag List") of the product's latest build
+        2. filter the package list to be updated: recorded_packages vs latest_packages
+        3. send the data of package that need updating to repo-updater/repo_update service
+        package data:
+
+
+
+    repo-updater/module_update - build_module_repo
+        1. add module info to metadata if module name is NOT listed in metadata/Modules
+            or change module status to working if module name is listed in metadata/Modules
+        2. define the CPU arch for virt module repo
+        3. run playbook update_custom_repo to install new packages of virt module and make virt module repo
+            - ??? details
+        4. when virt module is done, notify module watcher by email
+        5. if core pkg is updated,
+            - set data "job_name" before sending data to service job-trigger/get_job_datas to get jobs list if stream is rhel
+            get job data:
+                'pkg_name':pkg_name - 
+                'brew_tag':version - 8.0/8.0.0/8.1
+                'job_name': it is set when stream == rhel
+            - filter gating job out of jobs list got from srvice job-trigger/get_job_datas
+            - send data "job_data_list" to service job-trigger/trigger_job_list
+            trigger job data:
+                message - 
+                job_data_list - 
+                params - 
+        filter rules:
+            
+
+
+    repo-updater/repo_update
+        
+
+
+    job-trigger/trigger_job
+    job-trigger/stop_jobs
+    job-trigger/trigger_job_list
+    job-trigger/get_job_names
+    job-trigger/get_job_datas
+    job-trigger/tree_updater
+    job-trigger/trigger_image_build
+
+
+how to waive a gating testcase
+
+waiverdb-cli -p rhel-7 -r 2432608 -c "script issue"
+
+
+
+
+
+
+
+
+
+
+
+The smallest message:
+
+ {"product": "RHEL", "bkr_info": {"distro_tags": ["RTT_PASSED", "RTT_PASSED_PRIMARY"], "distro_name": "RHEL-8.0.1-updates-20190709.0"}, "arches": ["aarch64", "x86_64", "s390x", "ppc64le"], "version": "8.0", "build": "RHEL-8.0.1-updates-20190709.0"}
+
+
+
