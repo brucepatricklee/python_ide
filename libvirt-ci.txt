@@ -139,6 +139,11 @@ jenkins
 
 provision + runtest + teardown
 
+1. jenkins provision job workflow
+
+
+
+
 metadash beaker checksum
 
 
@@ -263,63 +268,295 @@ step three: change command file
 
 
 5. Libvirt CI microservice main tasks list:
-    brew watcher/scan_new_module
-        1. monitor MBS web page to get new virt module info
-        2. pass "gating" job to job-trigger/trigger_job service if new virt module arrived
-        3. send module info to repo-updater/module_update service if new virt module arrived
-    brew watcher/update_module_repo
-        0. do nothing if the module status in metadata/Modules is set
-        1. send module info to repo-updater/module_update service when the status is cleaned manually in libvirt-ci metadata
-        module info:
-            columns from metadata/Modules
-            "packages":pkgs - virt module package nvr list based on cmd "brew latest-build --all --quiet module_name"
-            "mbs_id":mbs_id - mbs items/id
-            "extra_params"extra_params - PROVISION and RESOURCE_PREVISION VERSION 
+    brew watcher/scan_modules
+        _scan_new_module
+        1. based on module name and stream name, such as {'name':'virt', 'stream':'8.1'}, scan MBS to to get newly(not listed in libvirt CI metadata) arrived virt module info
+        2. ignore module if it has been listed in libvirt ci-metadata
+        3. ACTION pass "gating" job to job-trigger/trigger_job service if new virt module arrived
+        4. ACTION get all the params for service RepoUpdaterService /repo/update-module
+            - name, module name
+            - version, product version such as RHEL7.8/RHEL8.0/RHEL8.0.0/RHEL8.1
+            - pkgs, the pkg list in module, virt module package nvr list based on cmd "brew latest-build --all --quiet module_name"
+            - typ, module type such as virt
+            - stream, module stream
+            - platform, platform stream from module info such as el8.0.1/el8.0.0z/el8.1.0
+            - mbs_id, module mbs id
+        5. send request to service RepoUpdaterService /repo/update-module
 
-
-    brew watcher/check_packages_status
+    brew watcher/scan_latest_pkgs
+        __check_packages_status
         0. get packages list that members and groups are watching
-        1. get the package info of all packages based on the brew tag(from metadate "Brew Tag List") of the product's latest build
-        2. filter the package list to be updated: recorded_packages vs latest_packages
-        3. send the data of package that need updating to repo-updater/repo_update service
+        1. get the "Brew Tag List", aka BTL of the current product
+        2. from brew, based on the BTL, get dict {nvr, (pkg, tag)} of latest build, including every packages
+        3. filter the package list to be updated: recorded_packages vs latest_packages
+        3. send the data of package that need updating to RepoUpdaterService /repo/update-pkg/header
         package data:
 
 
+    repo-updater service init
+    1. repo-updater/run
+        analyse the default params and run prepare(params)
+    2. prepare(params)
+        set jenkins key file
+        get pkg_data and pkg_info from libvirt-ci metadata
+        get the latest pkg obj of each product/pkg
+    3. start service container
 
-    repo-updater/module_update - build_module_repo
-        1. add module info to metadata if module name is NOT listed in metadata/Modules
-            or change module status to working if module name is listed in metadata/Modules
-        2. define the CPU arch for virt module repo
-        3. run playbook update_custom_repo to install new packages of virt module and make virt module repo
-            - ??? details
-        4. when virt module is done, notify module watcher by email
-        5. if core pkg is updated,
-            - set data "job_name" before sending data to service job-trigger/get_job_datas to get jobs list if stream is rhel
-            get job data:
+    repo-updater/module_update - RepoUpdaterService /repo/update-module
+        1. build_module_repo
+            - update module/package status
+                - module
+                    add module info to libvirt CI metadata if module name is NOT listed in metadata/Modules
+                    change module status to working if module name is listed in metadata/Module
+                - package
+            - create module repo path based on product/version/module name
+        2. update packages of the modules
+            - collect kargs for package
+            - run playbook update_custom_repo to install new packages of virt module and make virt module repo
+        3. run playbook update_custom_repo
+            - download package and copy to repo/archs directory
+            - create repo with command createrepo_c
+        4. invoke modify_module_repo
+            - prepare_module_yaml:
+            - run playbook build_module_repo to enable module function in repo
+        5. invoke update_latest_module_repo
+            - run playbook update_latest_repo to link symble latest-xxx to latest module repo
+        6. update module satus in libvirt-ci metadata as done
+        7. when virt module is done, notify module watcher by email
+        8. invoke trigger_module_job to trigger pkg function job if core pkgs are updated
+            - when stream is rhel:
+                set data/"job_name" with acceptnace-xxx job
+            - send data to service JobTriggerService /jobs/datas to get job name list from srvice job-trigger/get_job_datas
+            job data:
                 'pkg_name':pkg_name - 
                 'brew_tag':version - 8.0/8.0.0/8.1
                 'job_name': it is set when stream == rhel
-            - filter gating job out of jobs list got from srvice job-trigger/get_job_datas
-            - send data "job_data_list" to service job-trigger/trigger_job_list
-            trigger job data:
-                message - 
-                job_data_list - 
-                params - 
-        filter rules:
-            
+            - filter gating jobs out of job list
+            - send job list to service job-trigger/trigger_job_list
+                job data:
+                    message - 
+                    job_data_list - 
+                    params - 
 
 
-    repo-updater/repo_update
-        
+    repo-updater/repo_update  RepoUpdaterService /repo/update-pkg/header
+    1. invoke update_repo_internal
+        - get base_repo_path: /srv/www/html/libvirt-CI-repos
+        - if the pkg is scratch build
+            if the pkg is not libvirt or qemu-kvm, return
+            if the pkg is libvirt and "cov" is in pkg's "release" name
+                base_repo_path = /srv/www/html/libvirt-CI-Coverage-repos
+        - based on brew_tag and trigger_pacagke, get (product,version) from libvirt metadata
+        - based on new pkg info to filter out a existing pkg from libvirt metadata
+            if there is record in libvirt metadata, add a repo path for product/version
+        - update_single_pkgs
+            invoke update_packages with pkg args and repolist
+            run playbook update_custom_repo
 
 
-    job-trigger/trigger_job
-    job-trigger/stop_jobs
-    job-trigger/trigger_job_list
-    job-trigger/get_job_names
-    job-trigger/get_job_datas
-    job-trigger/tree_updater
-    job-trigger/trigger_image_build
+
+    job-trigger service init
+    - execute bin/job-trigger --> run()
+    - prepare_date(cls)
+        - function to create job data for each job and add all job data to cls.pkg_rules/cls.tree_rules/cls.rtt_rules based on jobs.yaml
+        - analyse jobs.yaml and set
+            - self._archs
+            - self._products
+            - self._job_ids - create a turple list of job such as [(libvirt, acceptance, gating),(libvirt, accepatance, gating_staging),...]
+            - self._rules
+        - generate job object and set job attribute
+            - Fill the job with parameters according to the rules in jobs.yaml
+            - exclude the specified jobs
+        - init job name based on job name template and job date
+        - init cls.pkg_rules/cls.tree_rules/cls.rtt_rules
+
+    - init cls.job_backend
+
+
+
+
+
+    - init container of service and start container
+
+    job-trigger/trigger_job - service(POST, /jobs/trigger)
+
+
+    job-trigger/get_job_names - service('GET', /jobs/names)
+    - A rest api to get job name list with specific trigger package
+
+
+
+    job-trigger/trigger_job_list - service('POST', /jobs/trigger-by-list)
+    - 
+
+
+
+    job-trigger/get_job_datas()
+    - A rest api to get job data list with specific trigger package
+
+
+
+
+
+
+
+libvirt-ci provision job workflow - job is created based on libvirt_ci/data/jobs/provision.yaml
+---------------------------------
+
+
+
+
+    1. libvirt_ci/data/jobs/scripts/setup_venv.sh
+        - set up virtual env
+    2. libvirt_ci/data/jobs/scripts/install_libvirt_ci.sh
+        - install package libvirt-ci
+    3. libvirt_ci/data/jobs/scripts/provision_slave.sh
+        - run "ci provision --worker-name $jslavename"
+    4. libvirt_ci/commands/provision.py
+        - set up params - setup_params
+            - params.yum_repos
+            - params.yum_resource_repos
+        - prepare repos obj - gen_recipeset_repos
+            - libvirt-ci
+            - libvirt_ci_virt_module
+            - 
+
+        - reserve test host
+            - check params.target and params.resource_host
+            - if params.target is bkr, import beaker module beaker.py as bkr
+                - importer.import_module("libvirt_ci.provision.beaker")
+                    - libvirt_ci/importer.py
+                        - install packages via pip
+                    - libvirt-ci/provision/beaker.py
+                - Build a beaker job XML file based on parameters
+                    - bkr.build_beaker_xml(params)
+                        - 
+                - Reserve host in beaker system according to beaker job XML file
+                
+            - if params.target is ci-osp, import osp module osp.py as osp
+        - prepare ansible hosts information
+
+        - run playbook prepare_ocp to prepare test host env
+
+        - run playbook prepare_system to prepare test host env
+            - 
+
+
+    5. libvirt_ci/data/jobs/scripts/provision_slave.sh
+        - save parameters from provision job
+
+
+
+run playbook 
+
+
+libvirt-ci runtest job workflow
+-------------------------------
+build runtest job based on libvirt_ci/data/jobs/runtest.yaml
+
+
+1. all start from file libvirt_ci/commands/run.py
+    - initialize env object
+    - invoke env.prepare_runner and get runner of env instance
+        - _process_params
+
+2. libvirt_ci/env/__init__.py
+    prepare_runner()
+
+3. libvirt_ci/env/__init__.py
+    self.config = self.param_handlers.perform_transfer(self, self.config, self.params)
+        'package_handler',
+        'machine_state_handler',
+        'new_framework_handler',
+        'git_repo_handler',
+        'patches_handler',
+        'test_object_handler',
+        'vt_type_handler',
+        '_framework_handler',
+            - replace variable in cfg files of runner
+            - execute runner special bootstrap
+
+runner env handler - env/defaults.py
+    - prepare_virt_module - ONLY for rhel8 and above
+        prepare virt module repo file obj
+            - name libvirt_ci_virt_module
+            - url http://download.libvirt.redhat.com/libvirt-CI-repos/$modulename/arch/
+            - priority = 2
+        prepare tree repo file obj
+            - $download/rhel-8/rel-eng/RHEL-8/RHEL-8.1.0-Snapshot-4.1/compose/
+            - APP repo - AppStream/x86_64/os/
+            - BaseOS repo - BaseOS/x86_64/os/
+        run playbook prepare_virt_module
+            create repo file and reset & enable virt module
+    - prepare_packages
+        prepare package repo file obj
+            - name libvirt-coverage
+            - url http://download.libvirt.redhat.com/libvirt-CI-Coverage-repos/RHEL/8.1/x86_64/'
+            - priority = 2
+        replace_qemu_rhev
+
+
+
+
+
+teardown job work flow
+----------------------
+
+job teardown job --> libvirt-ci serverless teardown service --> libvirt-ci teardown service
+
+libvirt-ci teardown service
+    - scripts/setup_venv.sh
+    - scripts/install_libvirt_ci.sh
+    - scripts/teardown_slave.sh
+    - scripts/clear_venv.sh
+
+
+jobs.yaml variable meaning
+--------------------------
+1. module stream and module name
+    - define the name of virt module  stream and when virt_module_name is provided,
+      the virt module stream is set based on virt module name
+    virt_module_stream
+    virt_module_name
+    resource_virt_module_stream
+    resource_virt_module_name
+
+2. beaker machine HW setting
+    ndisk
+    need_numa
+    numa_nodes
+    need_cpu_vendor
+    need_cpu_models
+    need_1g_hugepage
+
+3. migration resource setting
+    resource_virt_module_stream
+    resource_virt_module_name
+    resource-host
+    resource-version
+    resource-product
+    resource-guest-name
+    resource-img-dest
+
+4. location
+
+5. only_tree
+
+
+
+
+
+
+
+
+
+How a job is defined:
+    job_id is a list of tuple such as (libvirt, function, cpu).
+    analysis the jobs.yaml and make the following rules:
+        pkg_rules
+        tree_rules
+        rtt_rules
+
 
 
 how to waive a gating testcase
@@ -327,8 +564,9 @@ how to waive a gating testcase
 waiverdb-cli -p rhel-7 -r 2432608 -c "script issue"
 
 
-
-
+lbivirt-ci/run.py
+-----------------
+    1.    get params and extra_params from os.envion
 
 
 
@@ -341,4 +579,81 @@ The smallest message:
  {"product": "RHEL", "bkr_info": {"distro_tags": ["RTT_PASSED", "RTT_PASSED_PRIMARY"], "distro_name": "RHEL-8.0.1-updates-20190709.0"}, "arches": ["aarch64", "x86_64", "s390x", "ppc64le"], "version": "8.0", "build": "RHEL-8.0.1-updates-20190709.0"}
 
 
+libvirt-ci jenkins job related failure and solution(junxiang)
 
+1. packages and virt module
+    The packages in watching by people and group of libvirt metadata will be in kepted in libvirt-ci repo and updated timely
+    Module stream, module name and module id
+        virt:8.0.0
+        virt:8.0
+        virt:8.1
+        virt:rhel
+
+
+libvirt-ci FAQ
+--------------
+
+1. RHEL product and repo installation
+    available repo resource:
+        1. 
+
+
+
+    scenario one:
+    scenario two:
+    scenario three:
+
+
+
+Jenkins job FAQ
+---------------
+
+    1. Network issue
+    - <urlopen error [Errno -2] Name or service not known>
+        - DNS service failure
+    - TASK [Prepare required rpm packages on RHEL8 or Fedora] failed:
+        - github access issue
+    - HTTPSConnectionPool(host='files.pythonhosted.org', port=443): Read timed out
+        - GWF issue
+    2. some package requires higher version python. need to lock up the package to old version
+    - requests-oauthlib requires Python '>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*' but the running Python is 2.6.6
+    3. The latest A package depends on the latest B package, but B package is not in watch list
+    - nothing provides libseccomp >= 2.4.0 needed by qemu-kvm-core-15:2.12.0-77.module+el8.1.0+3382+49219945.ppc64le
+    4. Google ban the ip so jenkins could not get the info from libvirt-ci metadata
+    - frequent google sheet access cause the google ban the ci IP
+        Refreshing access_token
+        Build was aborted
+        or
+        Error when 'get_all_values' google sheet 'Products':
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+weekly meeting call for libvirt-ci daily task QA
+1. Testing environment issue
+    Tree -
+    Repo - 
+    Guest vm image name
+        - RHOS platform project-->computer-->instances click "launch instance"
+          Source-->available name:8.1
+
+
+2. 
+
+
+
+{"product": "RHEL", "bkr_info": {"distro_tags": ["RTT_PASSED", "RTT_PASSED_PRIMARY"], "distro_name": "RHEL-7.8-20191009.6"}, "arches": ["aarch64", "x86_64", "s390x", "ppc64le"], "version": "7.8", "build": "RHEL-7.8-20191009.6"}
+
+
+ {"product": "RHEL", "bkr_info": {"distro_tags": ["RC-1.1"], "distro_name": "RHEL-8.1.0-20191015.0"}, "arches": ["aarch64", "x86_64", "s390x", "ppc64le"], "version": "8.1", "build": "RHEL-8.1.0-20191015.0"}

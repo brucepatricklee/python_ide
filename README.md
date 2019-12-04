@@ -1,2 +1,3 @@
-# python_ide
-This program contains steps to set python vim IDE and vim settings
+# Bruce Lee Working Records
+
+This program contains all working related records for Bruce Lee
