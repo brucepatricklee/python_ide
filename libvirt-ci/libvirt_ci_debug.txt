@@ -1,0 +1,82 @@
+how to manually trigger image build job
+---------------------------------------
+in ipython console:
+
+-> import requests, json
+-> service_url = "http://job-trigger.cloud.paas.psi.redhat.com/jobs/build_image"
+
+data = json.dumps({"product": "RHEL", "version": "8.3", 'message':'{"product": "RHEL", "bkr_info": {"distro_tags": ["RTT_PASSED"], "distro_name": "RHEL-8.3.0-20201009.2"}, "arches": ["aarch64", "x86_64", "s390x", "ppc64le"], "version": "8.3", "build": "RHEL-8.3.0-20201009.2"}'})
+
+
+r = requests.post(service_url, data)
+
+r = requests.post(service_url, data, auth=('ci-ops-central-jenkins', 'tQrYdOHhBqOMJi/k'))
+
+print r.json
+
+
+{"product": "RHEL", "bkr_info": {"distro_tags": ["RTT_PASSED"], "distro_name": "RHEL-8.3.0-20200909.1"}, "arches": ["aarch64", "x86_64", "s390x", "ppc64le"], "version": "8.3", "build": "RHEL-8.3.0-20200909.1"}
+
+
+image build manually trigger ci_message
+---------------------------------------
+{"product": "RHEL", "bkr_info": {"distro_tags": ["RTT_PASSED"], "distro_name": "RHEL-8.3.0-20200909.1"}, "arches": ["aarch64", "x86_64", "s390x", "ppc64le"], "version": "8.3", "build": "RHEL-8.3.0-20200909.1"}
+
+
+
+How to write the Dockerfile for openshift image
+-----------------------------------------------
+
+how to debug libvirt ci code in docker
+
+1. install and enable docker-ce in RHEL7
+    - remove older version of docker (if any)
+        # yum remove docker docker-common docker-selinux docker-engine-selinux docker-engine docker-ce
+    - install needed packages
+        # yum install -y yum-utils device-mapper-persistent-data lvm2
+    - Configure the docker-ce repository and install docker-ce
+        # yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+        # yum install docker-ce
+    - enable and start docker service
+        # systemctl enable docker.service
+        # systemctl start docker.service
+    - test docker installation
+        # docker run hello-world
+
+2. insatll and enable docker-ce in RHEL8
+    - docker packages are not available anymore on CentOS 8 or RHEL 8 package repositories, so run following dnf command to enable Docker CE package repository and install docker-ce
+        # dnf config-manager --add-repo=https://download.docker.com/linux/centos/docker-ce.repo
+        # dnf list docker-ce
+        # dnf install docker-ce --nobest -y
+    - enable and start docker service
+        # systemctl enable docker
+        # systemctl start docker
+        # docker --version
+    - test docker installation
+        # docker run hello-world
+
+3. write Dockerfile
+    FROM docker-registry.upshift.redhat.com/libvirt-ci/rhel-internal:ubi8
+    and use the mirror pip repo to fasten the speed of installation
+        -i https://mirrors.163.com/pypi/simple/ 
+
+4. run docker with console
+    docker build -t jenkins-slave:v1 jenkins-slave/
+
+
+How to update the configure fot the image in openshift
+------------------------------------------------------
+
+1. donwload the openshift-client-linux
+
+2. connect to the openshift server with username and password
+    oc login
+        input the server name
+
+3. transform the yml file
+    oc process -f libvirt-ci-openshift/libvirt-ci-base.yaml > libvirt-ci-base.yaml
+
+4. apply the config file
+    oc apply -f libvirt-ci-base.yaml
+
+

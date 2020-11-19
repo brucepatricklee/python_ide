@@ -1,34 +1,4 @@
 
-Redhat Beaker Usage
-===================
-
-1. set beaker env
-    - reference page
-        https://docs.engineering.redhat.com/display/HTD/beaker.engineering.redhat.com+User+Guide
-    - download internal beaker repo file
-        #curl -o /etc/yum.repos.d/beaker-client.repo https://download.eng.bos.redhat.com/beakerrepos/beaker-client-RedHatEnterpriseLinux.repo
-    - install packages
-        #yum install beaker-client beaker-redhat
-    - registration in beaker with Kerberos password
-        #kinit jil@REDHAT.COM
-    - Verify that the bkr command works
-        #bkr whoami
-        {'username': 'dcallagh', 'email_address': 'dcallagh@redhat.com'}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 1. create a jenkins public key in target server
 [root@rhel7 ~]# cat .ssh/authorized_keys
@@ -50,13 +20,6 @@ ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAnDTpLaJrrmEyYpT0BkAIOI/7ym46gaQJRykdV5FHyft8
             PROVISION_PRODUCT RHEL
             PROVISION_VIRT_MODULE_STREAM rhel/8.0.0
 
-3. rerun failed Jenkins testrun in the provisioned machine
-
-    - select a JIRA issue and open Jenkins log via Jenkin link in the comment of JIRA issue
-    - copy the Jenkins job and change the following parameters:
-        NODE_LABEL jil_rhel8
-        CI_ONLY
-
 
 
 key concepts about Libvirt CI
@@ -77,24 +40,11 @@ config/jobs.yaml
 
 
 
-Red Hat Enterprise Linux
-------------------------
-
-8.0.1 TES 6.12 - 7.23
-
-8.1.0 DEV/TES 2.13 - 9.11
-
-
 
 Red Hat Enterprise Linux Advanced Virtualization
 ------------------------------------------------
 Red Hat Enterprise Linux Advanced Virtualization is one of the technologies that enables Red Hat’s virtualization products:
     Red Hat OpenStack, Container Network Virtualization and Red Hat Virtualization
-
-RHEL-AV 8.0.1 - TES 6.12 - 7.12
-
-RHEL-AV 8.1.0 - DEV/TES 5.16 - 8.14
-              - TES 9.3 - 11.6
 
 datagrepper - for tree message
     https://datagrepper.engineering.redhat.com/raw?topic=/topic/VirtualTopic.eng.rtt.ci
@@ -115,13 +65,6 @@ brew-watcher
 
 osci dashboard - http://dashboard.osci.redhat.com/#/search/redhat-modules
 
-gating
-    - libvirt libvirt-python
-    - module
-
-beaker
-    - beaker python2.6 
-    - 
 
 PSI - US
     - openshift
@@ -133,18 +76,6 @@ openshift - OCP - beijing
 
 
 
-
-jenkins
--------
-
-provision + runtest + teardown
-
-1. jenkins provision job workflow
-
-
-
-
-metadash beaker checksum
 
 
 
@@ -399,118 +330,6 @@ step three: change command file
 
 
 
-
-libvirt-ci provision job workflow - job is created based on libvirt_ci/data/jobs/provision.yaml
----------------------------------
-
-
-
-
-    1. libvirt_ci/data/jobs/scripts/setup_venv.sh
-        - set up virtual env
-    2. libvirt_ci/data/jobs/scripts/install_libvirt_ci.sh
-        - install package libvirt-ci
-    3. libvirt_ci/data/jobs/scripts/provision_slave.sh
-        - run "ci provision --worker-name $jslavename"
-    4. libvirt_ci/commands/provision.py
-        - set up params - setup_params
-            - params.yum_repos
-            - params.yum_resource_repos
-        - prepare repos obj - gen_recipeset_repos
-            - libvirt-ci
-            - libvirt_ci_virt_module
-            - 
-
-        - reserve test host
-            - check params.target and params.resource_host
-            - if params.target is bkr, import beaker module beaker.py as bkr
-                - importer.import_module("libvirt_ci.provision.beaker")
-                    - libvirt_ci/importer.py
-                        - install packages via pip
-                    - libvirt-ci/provision/beaker.py
-                - Build a beaker job XML file based on parameters
-                    - bkr.build_beaker_xml(params)
-                        - 
-                - Reserve host in beaker system according to beaker job XML file
-                
-            - if params.target is ci-osp, import osp module osp.py as osp
-        - prepare ansible hosts information
-
-        - run playbook prepare_ocp to prepare test host env
-
-        - run playbook prepare_system to prepare test host env
-            - 
-
-
-    5. libvirt_ci/data/jobs/scripts/provision_slave.sh
-        - save parameters from provision job
-
-
-
-run playbook 
-
-
-libvirt-ci runtest job workflow
--------------------------------
-build runtest job based on libvirt_ci/data/jobs/runtest.yaml
-
-
-1. all start from file libvirt_ci/commands/run.py
-    - initialize env object
-    - invoke env.prepare_runner and get runner of env instance
-        - _process_params
-
-2. libvirt_ci/env/__init__.py
-    prepare_runner()
-
-3. libvirt_ci/env/__init__.py
-    self.config = self.param_handlers.perform_transfer(self, self.config, self.params)
-        'package_handler',
-        'machine_state_handler',
-        'new_framework_handler',
-        'git_repo_handler',
-        'patches_handler',
-        'test_object_handler',
-        'vt_type_handler',
-        '_framework_handler',
-            - replace variable in cfg files of runner
-            - execute runner special bootstrap
-
-runner env handler - env/defaults.py
-    - prepare_virt_module - ONLY for rhel8 and above
-        prepare virt module repo file obj
-            - name libvirt_ci_virt_module
-            - url http://download.libvirt.redhat.com/libvirt-CI-repos/$modulename/arch/
-            - priority = 2
-        prepare tree repo file obj
-            - $download/rhel-8/rel-eng/RHEL-8/RHEL-8.1.0-Snapshot-4.1/compose/
-            - APP repo - AppStream/x86_64/os/
-            - BaseOS repo - BaseOS/x86_64/os/
-        run playbook prepare_virt_module
-            create repo file and reset & enable virt module
-    - prepare_packages
-        prepare package repo file obj
-            - name libvirt-coverage
-            - url http://download.libvirt.redhat.com/libvirt-CI-Coverage-repos/RHEL/8.1/x86_64/'
-            - priority = 2
-        replace_qemu_rhev
-
-
-
-
-
-teardown job work flow
-----------------------
-
-job teardown job --> libvirt-ci serverless teardown service --> libvirt-ci teardown service
-
-libvirt-ci teardown service
-    - scripts/setup_venv.sh
-    - scripts/install_libvirt_ci.sh
-    - scripts/teardown_slave.sh
-    - scripts/clear_venv.sh
-
-
 jobs.yaml variable meaning
 --------------------------
 1. module stream and module name
@@ -550,13 +369,6 @@ jobs.yaml variable meaning
 
 
 
-How a job is defined:
-    job_id is a list of tuple such as (libvirt, function, cpu).
-    analysis the jobs.yaml and make the following rules:
-        pkg_rules
-        tree_rules
-        rtt_rules
-
 
 
 how to waive a gating testcase
@@ -564,19 +376,8 @@ how to waive a gating testcase
 waiverdb-cli -p rhel-7 -r 2432608 -c "script issue"
 
 
-lbivirt-ci/run.py
------------------
-    1.    get params and extra_params from os.envion
 
 
-
-
-
-
-
-The smallest message:
-
- {"product": "RHEL", "bkr_info": {"distro_tags": ["RTT_PASSED", "RTT_PASSED_PRIMARY"], "distro_name": "RHEL-8.0.1-updates-20190709.0"}, "arches": ["aarch64", "x86_64", "s390x", "ppc64le"], "version": "8.0", "build": "RHEL-8.0.1-updates-20190709.0"}
 
 
 libvirt-ci jenkins job related failure and solution(junxiang)
@@ -590,53 +391,6 @@ libvirt-ci jenkins job related failure and solution(junxiang)
         virt:rhel
 
 
-libvirt-ci FAQ
---------------
-
-1. RHEL product and repo installation
-    available repo resource:
-        1. 
-
-
-
-    scenario one:
-    scenario two:
-    scenario three:
-
-
-
-Jenkins job FAQ
----------------
-
-    1. Network issue
-    - <urlopen error [Errno -2] Name or service not known>
-        - DNS service failure
-    - TASK [Prepare required rpm packages on RHEL8 or Fedora] failed:
-        - github access issue
-    - HTTPSConnectionPool(host='files.pythonhosted.org', port=443): Read timed out
-        - GWF issue
-    2. some package requires higher version python. need to lock up the package to old version
-    - requests-oauthlib requires Python '>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*' but the running Python is 2.6.6
-    3. The latest A package depends on the latest B package, but B package is not in watch list
-    - nothing provides libseccomp >= 2.4.0 needed by qemu-kvm-core-15:2.12.0-77.module+el8.1.0+3382+49219945.ppc64le
-    4. Google ban the ip so jenkins could not get the info from libvirt-ci metadata
-    - frequent google sheet access cause the google ban the ci IP
-        Refreshing access_token
-        Build was aborted
-        or
-        Error when 'get_all_values' google sheet 'Products':
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -648,12 +402,3 @@ weekly meeting call for libvirt-ci daily task QA
         - RHOS platform project-->computer-->instances click "launch instance"
           Source-->available name:8.1
 
-
-2. 
-
-
-
-{"product": "RHEL", "bkr_info": {"distro_tags": ["RTT_PASSED", "RTT_PASSED_PRIMARY"], "distro_name": "RHEL-7.8-20191009.6"}, "arches": ["aarch64", "x86_64", "s390x", "ppc64le"], "version": "7.8", "build": "RHEL-7.8-20191009.6"}
-
-
- {"product": "RHEL", "bkr_info": {"distro_tags": ["RC-1.1"], "distro_name": "RHEL-8.1.0-20191015.0"}, "arches": ["aarch64", "x86_64", "s390x", "ppc64le"], "version": "8.1", "build": "RHEL-8.1.0-20191015.0"}

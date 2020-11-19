@@ -1,0 +1,13 @@
+
+1. job yaml file
+libvirt_ci/data/jobs/provision.yaml 
+    - scripts/setup_venv.sh
+    - scripts/install_libvirt_ci.sh
+        - pip install libvirt-ci@$LIBVIRT_CI_BRANCH
+    - scripts/provision_slave.sh
+        - ci provision --worker-name "{jslavename}" --hostname "{hostname}"
+        - save parameters to $WORKSPACE/env.txt
+    - scripts/clear_venv.sh
+
+
+

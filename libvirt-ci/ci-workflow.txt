@@ -1,0 +1,105 @@
+
+libvirt-ci provision job workflow - job is created based on libvirt_ci/data/jobs/provision.yaml
+---------------------------------
+
+    1. libvirt_ci/data/jobs/scripts/setup_venv.sh
+        - set up virtual env
+    2. libvirt_ci/data/jobs/scripts/install_libvirt_ci.sh
+        - install package libvirt-ci
+    3. libvirt_ci/data/jobs/scripts/provision_slave.sh
+        - run "ci provision --worker-name $jslavename"
+    4. libvirt_ci/commands/provision.py
+        - set up params - setup_params
+            - params.yum_repos
+            - params.yum_resource_repos
+        - prepare repos obj - gen_recipeset_repos
+            - libvirt-ci
+            - libvirt_ci_virt_module
+            -
+
+        - reserve test host
+            - check params.target and params.resource_host
+            - if params.target is bkr, import beaker module beaker.py as bkr
+                - importer.import_module("libvirt_ci.provision.beaker")
+                    - libvirt_ci/importer.py
+                        - install packages via pip
+                    - libvirt-ci/provision/beaker.py
+                - Build a beaker job XML file based on parameters
+                    - bkr.build_beaker_xml(params)
+                        -
+                - Reserve host in beaker system according to beaker job XML file
+
+            - if params.target is ci-osp, import osp module osp.py as osp
+        - prepare ansible hosts information
+        - run playbook prepare_ocp to prepare test host env
+        - run playbook prepare_system to prepare test host env
+
+    5. libvirt_ci/data/jobs/scripts/provision_slave.sh
+        - save parameters from provision job
+
+
+
+
+uibvirt-ci runtest job workflow
+
+-------------------------------
+build runtest job based on libvirt_ci/data/jobs/runtest.yaml
+
+
+1. all start from file libvirt_ci/commands/run.py
+    - initialize env object
+    - invoke env.prepare_runner and get runner of env instance
+        - _process_params
+
+2. libvirt_ci/env/__init__.py
+    prepare_runner()
+
+3. libvirt_ci/env/__init__.py
+    self.config = self.param_handlers.perform_transfer(self, self.config, self.params)
+        'package_handler',
+        'machine_state_handler',
+        'new_framework_handler',
+        'git_repo_handler',
+        'patches_handler',
+        'test_object_handler',
+        'vt_type_handler',
+        '_framework_handler',
+            - replace variable in cfg files of runner
+            - execute runner special bootstrap
+
+runner env handler - env/defaults.py
+    - prepare_virt_module - ONLY for rhel8 and above
+        prepare virt module repo file obj
+            - name libvirt_ci_virt_module
+            - url http://download.libvirt.redhat.com/libvirt-CI-repos/$modulename/arch/
+            - priority = 2
+        prepare tree repo file obj
+            - $download/rhel-8/rel-eng/RHEL-8/RHEL-8.1.0-Snapshot-4.1/compose/
+            - APP repo - AppStream/x86_64/os/
+            - BaseOS repo - BaseOS/x86_64/os/
+        run playbook prepare_virt_module
+            create repo file and reset & enable virt module
+    - prepare_packages
+        prepare package repo file obj
+            - name libvirt-coverage
+            - url http://download.libvirt.redhat.com/libvirt-CI-Coverage-repos/RHEL/8.1/x86_64/'
+            - priority = 2
+        replace_qemu_rhev
+
+
+
+
+
+
+
+teardown job work flow
+----------------------
+
+job teardown job --> libvirt-ci serverless teardown service --> libvirt-ci teardown service
+
+libvirt-ci teardown service
+    - scripts/setup_venv.sh
+    - scripts/install_libvirt_ci.sh
+    - scripts/teardown_slave.sh
+    - scripts/clear_venv.sh
+

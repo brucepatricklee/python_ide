@@ -1,0 +1,33 @@
+NPIV - to be verified in the latest run
+------------------------------------------
+npiv - https://projects.engineering.redhat.com/browse/LIBVIRTEIG-1452
+
+
+VIRTIO_RNG - feature owner yanqzhan yafu
+------------------------------------------
+virtio_rng - 1
+test case issue need to clean up snapshot LIBVIRTAT-7558
+
+
+TPM_EMULATOR
+------------------------------------------
+tpm_emulator - pass
+
+
+TPM_PASSTHROUGH
+------------------------------------------
+tpm_passthrough - pass
+
+
+NFV
+------------------------------------------
+nfv - pass
+
+
+
+USB - feature owner
+----------------------------------------
+61 has hardware issue , try 66
+
+usbredir-server
+

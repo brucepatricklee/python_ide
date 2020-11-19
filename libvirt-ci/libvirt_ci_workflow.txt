@@ -1,0 +1,95 @@
+job trigger service
+-------------------
+job-trigger --email-notify --registry Openshift
+No handlers could be found for logger "stomp.py"
+2020-09-21 07:40:01,049 | INFO     | job_trigger.service [GreenThread-1] - Connect to stomp server
+2020-09-21 07:40:01,049 | INFO     | job_trigger.service [GreenThread-1] - Subscribe to topics: ['Consumer.libvirt-ci.job-trigger.VirtualTopic.eng.ci.>', 'Consumer.libvirt-ci.job-trigger.VirtualTopic.eng.rtt.ci.>', 'Consumer.libvirt-ci.job-trigger.VirtualTopic.eng.distill.compose-moved.>']
+2020-09-21 07:40:01,050 | INFO | __main__ [MainThread] - Start service
+
+1. run on the openshift platfrom of PSI, based on the dockerfile job-trigger/Dockerfile
+    #execute the command in docker-entrypoint.sh
+        job-trigger --email-notify --registry Openshift
+
+2. job-trigger/bin/job-trigger
+    #execute the run()
+    - init the service class - job_trigger.JobTrigger
+    #service_cls.prepare(params)
+        a. service.BaseService().prepare() - cls.registry = OpenshiftRegistry
+        a. JobTrigger.prepare_data() - job trigger rules init
+        b. init cls.job_backend based on cls.registry
+    #service.CIServiceContainer() - init and start container to run service based on service class
+        
+3. trigger service restful API
+
+/jobs/build_image
+    url = "http://job-trigger.cloud.paas.psi.redhat.com/jobs/build_image"
+    timeout = 30
+    headers = {}
+    data = {"version": "8.4", "product": "RHEL", "message": {"product": "RHEL", "bkr_info": {"distro_tags": ["nightly_composes"], "distro_name": "RHEL-8.4.0-20200926.n.0"}, "arches": ["aarch64", "x86_64", "s390x", "ppc64le"], "version": "8.4", "build": "RHEL-8.4.0-20200926.n.0", "url_prefix": "http://download.eng.pek2.redhat.com/rhel-8/nightly/RHEL-8/"}}
+    requests.request("POST", url, json=data, headers=headers, timeout=timeout)
+
+/jobs/stop
+    url = "http://job-trigger.cloud.paas.psi.redhat.com/jobs/stop"
+    headers = {}
+    timeout = 30
+    data = {"pkg_name": "libvirt", 'brew_tag': "#rhel-8.3.0-candidate", "job_name": "function-usb", "arch": "x86_64", "product": "RHEL"}
+    requests.request("POST", url, json=data, headers=headers, timeout=timeout)
+
+
+
+
+
+
+
+
+
+1. job trigger message in extra_message
+micro service add trigger event and id in extra_message
+    - tree (trigger id = distro)
+    - av_compose (trigger id = av_compose_id)
+    - package (trigger id = pkg nvr, include pkg in or not in virt module(in metadata/Groups/Watching Packages))
+    - module(trigger id = module build name)
+
+2. signoff job trigger
+    - tree signoff trigger
+        - 
+    - package trigger
+        - non-module package arrival, repo_updater update the repo and send the
+        pkg info to job_trigger, job_trigger filter out the job list via pkg_filter,
+        then send the job list to jenkins
+        - module package arrival, 
+    - module trigger
+
+    - av compose trigger
+        - 
+
+
+1. when the brew-watcher scan module,
+    - find there is new module arrival
+        - trigger gating job list filtered by [product, version, arch, job_name, component]
+        - send out module info to repo_updater - /repo/update-module
+        - repo_updater create new module repo
+        - if create new module repo successfully, repo_updater get job_list from job_trigger - /jobs/datas
+            - when stream == rhel, job_list only include acceptance job
+        - job_trigger return job_list based on the filter of pkg_rules
+        - repo_updater filter out job named with gating
+        - repo_updater send out job_list to job_trigger - /jobs/trigger-by-list
+    - find there is existing module, but the status of module repo is not correct
+        - trigger repo update task(same as above)
+
+2. when the brew-watcher scan package,
+    - find out the watched packages which has new version, send out pkg info to repo_updater - /repo/update-pkg/header
+        - repo_updater update package repo
+            - skip if the package is not watched by anyone
+            - update the package repo
+            - send out pkg info to job_trigger - /jobs/trigger
+
+
+
+
+
+
+
+
+
+
