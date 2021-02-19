@@ -48,8 +48,26 @@ build runtest job based on libvirt_ci/data/jobs/runtest.yaml
 
 1. all start from file libvirt_ci/commands/run.py
     - initialize env object
-    - invoke env.prepare_runner and get runner of env instance
-        - _process_params
+    - invoke env.prepare_runner 
+        -  init the env.runner_instance with test framework runner
+            - run _process_params in runner/__init__.py
+            - init the test framework runner
+        - init the env.config = {framework_name: {}}
+        - init the env.params = base.params + defaults
+        - perform functions in each handlers
+            ***- env.runner_instance.prepare_framework() - prepare_replaces() + bootstrap()
+
+    - execute run() in runner/__init__.py
+        - prepare_run() base + framework_runner.prepare_run()
+            init_params in runner/__init__.py
+            restore_image in avocado_vt.py
+            custom_prepare in avocado_vt.py
+        - prepare_report()
+        - prepare_tests()
+            get case list from params.only
+            filter case list with no list
+        - prepare_state()
+
 
 2. libvirt_ci/env/__init__.py
     prepare_runner()

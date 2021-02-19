@@ -1,4 +1,73 @@
 
+provision job
+
+                - scripts/setup_venv.sh
+                - scripts/install_libvirt_ci.sh
+                - scripts/provision_slave.sh
+                - scripts/clear_venv.sh
+
+runtest job
+
+                - scripts/setup_system_venv.sh
+                - scripts/install_libvirt_ci.sh
+                - scripts/runtest.sh
+                - scripts/keep_latest_venv.sh
+                - scripts/setup_venv.sh
+                - scripts/install_libvirt_ci.sh
+                - scripts/report_result_to_jira.sh
+                - scripts/report_result_to_dashboard.sh
+                - scripts/submit_metrics.sh
+                - scripts/report_result_to_metadash.sh
+                - scripts/clear_venv.sh
+
+teardown job
+
+                - scripts/setup_venv.sh
+                - scripts/install_libvirt_ci.sh
+                - scripts/teardown_slave.sh
+                - scripts/clear_venv.sh
+
+
+
+image build
+                - scripts/setup_system_venv.sh
+                - scripts/install_libvirt_ci.sh
+                - scripts/build_image.sh
+                - scripts/clear_venv.sh
+
+
+add fedora ci job
+    - add image build job for fedora
+        - use Fedora-Rawhide(Fedora-34)
+        - upgrade ansible from 2.6.15 to 2.8.14
+        - install java-1.8.0-openjdk and set system default env to java-1.8.0
+
+    - update image_build for fedora
+                - scripts/setup_system_venv.sh
+                - scripts/install_libvirt_ci.sh
+                - scripts/build_image.sh
+                - scripts/clear_venv.sh
+    - ci provision
+        - change KS_APPEND in fill_ks_appends
+        - change distro_variant in fill_distro_requires
+        - change distro and version info in prepare_system.yaml
+    - ci build-guest-image
+        -
+        - update kickstart file based on OS version
+    - ci update-tree
+
+
+how to add package into libvirt-ci repo
+1. add package into "Watching Packages" of page Groups in libvirt ci metadata
+2. add package name into "install-pkgs" of specific job in jobs.yaml
+
+
+
+
+
+
+
+
 
 1. create a jenkins public key in target server
 [root@rhel7 ~]# cat .ssh/authorized_keys
@@ -196,6 +265,9 @@ step three: change command file
 4. minimal available message
 
 {"product": "RHEL", "bkr_info": {"distro_tags": ["RTT_PASSED", "RTT_PASSED_PRIMARY"], "distro_name": "RHEL-8.0.1-updates-20190709.0"}, "arches": ["aarch64", "x86_64", "s390x", "ppc64le"], "version": "8.0", "build": "RHEL-8.0.1-updates-20190709.0"}
+
+
+{"product": "RHEL", "bkr_info": {"distro_name": "RHEL-8.4.0-20210108.n.0"}, "arches": ["aarch64", "x86_64", "s390x", "ppc64le"], "version": "8.4", "build": "RHEL-8.4.0-20210108.n.0"}
 
 
 5. Libvirt CI microservice main tasks list:

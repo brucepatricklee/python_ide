@@ -1,70 +1,94 @@
-provision job
-
-                - scripts/setup_venv.sh
-                - scripts/install_libvirt_ci.sh
-                - scripts/provision_slave.sh
-                - scripts/clear_venv.sh
-
-runtest job
-
-                - scripts/setup_system_venv.sh
-                - scripts/install_libvirt_ci.sh
-                - scripts/runtest.sh
-                - scripts/keep_latest_venv.sh
-                - scripts/setup_venv.sh
-                - scripts/install_libvirt_ci.sh
-                - scripts/report_result_to_jira.sh
-                - scripts/report_result_to_dashboard.sh
-                - scripts/submit_metrics.sh
-                - scripts/report_result_to_metadash.sh
-                - scripts/clear_venv.sh
-image build
-                - scripts/setup_system_venv.sh
-                - scripts/install_libvirt_ci.sh
-                - scripts/build_image.sh
-                - scripts/clear_venv.sh
-
-0. update job_trigger to send out virt_module_stream info !!!!
-
-1. update the trello card and make meeting with yukin, make sure the bugzilla/blacklist workflow
-
-2. meeting with lnie, how to develop libvirt-python test job in fedora
-    - config shell script
-    - config test-api custom-repo config
-
-3. add a trello card to investigate the failed update of failure summary
-
-
-virt-install -n image-builder -r 2048 --vcpus=2 --disk path=/var/lib/libvirt/images/image-builder.qcow2 --location=http://download.eng.bos.redhat.com/fedmsg/dumpdata/primary//Fedora-Rawhide-20201108.n.0/Server/x86_64/os/ --disk /tmp/ks.iso,device=cdrom -x "ks=cdrom:ks.cfg" --console pty --nographics --extra-args "console=ttyS0,115200" --noreboot --wait -1
 
 
 
-cross TB
---------
-1. 确认报销流程邮件
 
 
-Fedora image build job
----------------------
 
+
+
+
+
+
+
+
+fedora new rawhide and 34 - fedora ci update
+
+Take micro services cuvvete and scheduler from lhuang !!!!!!
+
+review koji-listener !!!! FOR fedora project
+
+
+KNOW ISSUES FOR RHEL-9
+    - no command virt-sysprep(no libguest-tools) for guest_image_build.yaml        
+    - url installation failure - use walk around to fix the issue
+    - 
+
+
+Learning Buildbot !!!
+
+
+1. Fedora CI follow-up actions
+    - need to confirm the setting for fedora libvirt function test !!!
+    
+
+centos stream & CI work sharing
+english improvement
+technical sharing
+learning day plan
+
+    - investigate the compose UMB message on the nightly build compose for RHEL-9
+        - use development compose for pre-verified bugs
+        - use the nightly compose for function test
+    - rhel 9 image build try - failure RHEL-9.0.0-20201221.2 - Dec 22nd
+        - trying the image build job
+        - the openstack vm name is changed to RHEL-9.0.0-x86_64-nightly, need to find a way to use it
+        - RHEL-9.0 compose tree trigger issue ?????
+    
+        - walk around for image build - ./libvirt_ci/data/playbooks/guest_image_builder.yaml
+
+-      when: (ansible_distribution == "RedHat" and ansible_distribution_major_version|int >= 8) or
++      when: (ansible_distribution == "RedHat" and ansible_distribution_major_version|int == 8) or
+
+    - name: Install required packages for RHEL9
+      dnf:
+          name: "virt-install,qemu-kvm,qemu-img,genisoimage,xz,libvirt, firewalld"
+          state: "present"
+      when: (ansible_distribution == "RedHat" and ansible_distribution_major_version|int >= 9) or
+            (ansible_distribution == "Fedora" and ansible_distribution_major_version|int >= 34)
+
+
+    - migration for caselink from ocp3
+        - deployment done
+        - need to use root to boot the pod - in process
+
+    - python3 migration about microservice
+        - libvirt-ci-docs-server - done
+        - case-link - done
+
+    - jenkins master migration
+        - launch a rhel-8.3 job to acculate the compress build log function
+        - review the two biggest files junitResult.xml and archive/result_rhel.xml
+
+我们有两个需求
+1. 我们有个记录结果目录的文件夹, 需要拷贝出来的
+2. 我们的结果需要输出成怎样的格式? 才能在 CI 里面看到结果, 比如PASS /FAIL的个数...
+auto_test_tool/log_dir
+auto_test_tool/result_excel
 
 
 
 S3 team meeting - Short term to do list
----------------------------------------
-mojo ---> source migration !!
+=======================================
+2. set CY2021 new year goal
 
-All hands - One OCP deploy !!!!
+4. send email to explanation the absent of RHU lessons in plan
 
-Read and Learn python micro service framework nameko
 
-3. send email to explanation the absent of RHU lessons in plan
 
-Novermber 1 on 1
-------------
-yukin work - trello card following up
-work follow up - feed back follow up
+CI 
+    add a small job to scan the hardware usage in beaker and release the target accordingly
 
+1. use jira as a project tool to manage the CI project
 
 
 
@@ -77,52 +101,14 @@ learning pack - Participate in the Virtual Learning Pack
     - getting things done
 
 
-
-resource training - replace mojo !!!!
-RingCentral - IT
-Virtual Delivery Offerings!
-
-add fedora ci job
-    - add image build job for fedora
-        - use Fedora-Rawhide(Fedora-34)
-        - upgrade ansible from 2.6.15 to 2.8.14
-        - install java-1.8.0-openjdk and set system default env to java-1.8.0
-        
-    - update image_build for fedora
-                - scripts/setup_system_venv.sh
-                - scripts/install_libvirt_ci.sh
-                - scripts/build_image.sh
-                - scripts/clear_venv.sh
-    - ci provision
-        - change KS_APPEND in fill_ks_appends
-        - change distro_variant in fill_distro_requires
-        - change distro and version info in prepare_system.yaml
-    - ci build-guest-image
-        - 
-        - update kickstart file based on OS version
-    - ci update-tree
+CI document updating
+--------------------
+support to reserve two machines or vms of different RHEL version
 
 
 
 
 
-
-
-
-
-
-in process tasks
-----------------
-1. set the default image and network check for all runners
-    - perl-sys-virt - gating pass
-
-2. update automated test match - 
-
-5. git repo install issue
-    - change shell script to python and add gitlab as the backup git repo
-
-
-Week Aug30 & Week Sep6
 
 Libvirt CI requirement
 
@@ -132,51 +118,13 @@ Debug and fix automation case jira issue
 
 Libvirt ci document update
 
-
-- how to login the jenkins slave node
-        - dev/debug libvirt-ci tool scripts
-
 - fix jira isse LIBVIRTAT-5337
-
-
 
 Libvirt CI debug workflow
 -------------------------
 当libvirt-ci 没有正常运行，如何debug and 如何手动模拟消息，触发测试 ！！
 
 
-
-CI document updating
---------------------
-support to reserve two machines or vms of different RHEL version
-
-
-libvirt ci document - https://libvirt-ci-docs.ocp.libvirt.redhat.com/index.html
-document update phase one - March 15th
-    libvirt CI job trigger scenario
-    list what message will trigger what test job
-    list what test job is triggered manually
-    Libvirt CI Test Resource
-    libvirt CI service & repos
-    Libvirt CI testing Metadata 
-how to understand & define CI parameters in jobs.yaml and CI metadata google sheet
-
-document update phase two
-    libvirt CI runner
-
-please file issue in https://gitlab.cee.redhat.com/libvirt-auto/libvirt-ci/issues
-libvirt-ci-tips
-https://docs.google.com/document/d/14FVzzhn3OXY5rRDMDwjwybntOlxL9Vw99INPPZsukQk/edit#
-
-
-Libvirt CI resource
-1. beaker machine
-2. openstack vm
-3. module and package repo
-
-how to add package into libvirt-ci repo
-1. add package into "Watching Packages" of page Groups in libvirt ci metadata
-2. add package name into "install-pkgs" of specific job in jobs.yaml
 
 
 
@@ -227,19 +175,21 @@ how to implement with your team
 
 
 
-FY20 monthly report - Oct
---------------------------
-Libvirt CI requirement
-    1. Enable libvirt CI to use nightly build as RHEL compose and update metadata accordingly
-    2. Enable libvirt CI to set the testing env in resource host for migration test
+
+
+
+CY21 monthly report - Jan
+-------------------------
+Libvirt CI requirement    
+    reorganize the test target (machine/vm) teardown workflow
+    add JJB yaml file for single-teardown job in ci-shared-datas
+    caselink-jenkins slave migrate to OCP4.5  libvirt-ci-stage
 
 Libvirt CI failure fix and Jenkins job maintains
-    1. Update the runtime config for libvirt split modular deamon test
-    2. Python3 migration for libvirt CI
-        - Python3 migration for CI provision job
-        - Python3 migration for jenkins-slave container image in openshift
-
-Interview candidate of libvit automation QE
+    Fix provision failure of fixed python2 branch in RHEL-7
+    Fix guest image repo name for virt module av stream in RHEL-8.4
+    Resolve libvirt-ci repo issue#22
+    debug https://code.engineering.redhat.com NOT accessible issue and send out email with method to update IPA Kerberos Method
 
 Debug and fix automation case jira issue
 
@@ -247,199 +197,6 @@ Libvirt-ci & micro-service PR review
 
 take CI questions consulting for team members
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-FY20 monthly report - Sep
---------------------------
-Libvirt CI requirement
-    1. make a unique CI job config interface
-    2. add job config interface to reserve beaker host with specific CPU flags
-    3. update provision job env from python2 to python3
-
-Libvirt CI failure fix and Jenkins job maintains
-    1. debug and fix provision job failure
-    2. create/fix the gitlab webhook for the image build task
-    3. Disable auto trigger for s390x for acceptance and gating job
-    4. job_trigger service fail to get the RHEL compose RTT message for RHEL7.9 and RHEL8.3
-    5. RHEL7.9 runtest python-urllib3 error
-    6. fail to run runtest job for multiarch machine
-
-Interview candidate of libvit automation QE
-
-Debug and fix automation case jira issue
-
-Libvirt-ci & micro-service PR review
-
-take CI questions consulting for team members
-
-
-FY20 monthly report - Aug
---------------------------
-Libvirt CI requirement
-
-Libvirt CI failure fix and Jenkins job maintains
-    - skip cpu_cores of beaker in ppc/s390 machines
-
-combine the jobs.yaml in job_trigger and libvirt_ci into one file
-    1. make libvirt-ci change - done
-    2. combine the jobs.yaml of libvirt-ci and job_trigger to ci-shared-datas repo - done
-    3. make job_trigger change - done
-    4. update the document and docs in libvirt-ci - in process
-
-Enable ci job for libvirt-python test on Fedora release
-    1.  add libvirt-python job of fedora to jenkins - done
-    - change libvirt-ci jobs.yaml to create libvirt-python job on Fedora - done
-
-    2. enable image build job for Fedora - in process
-    - provision job reserve machine from beaker - done
-    - runtest job build guest image for Fedora - in process
-
-    3. enable ci to run libvirt-python job on Fedora - not started
-    - provision job reserve machine from beaker
-    - runtest job install libvirt packages and run libvirt-python test
-
-    4. create fedora latest package repo  - not started
-    - enable brew-watcher service to scan and create latest libvirt packages for fedora CI test
-
-    5.  update mirco-service job_trigger to auto-trigger libvirt-python test on Fedora - not started
-
-Debug and fix automation case jira issue
-
-Libvirt-ci & micro-service PR review
-
-take CI questions consulting for team members
-
-
-{"PROVISION_AV_COMPOSE_ID": "ADVANCED-VIRT-8.2.1-RHEL-8-20200825.0", "PROVISION_AV_COMPOSE_PATH": "/mnt/redhat/rhel-8/rel-eng/updates/ADVANCED-VIRT-8/ADVANCED-VIRT-8.2.1-RHEL-8-20200825.0"}
-
-{"product": "Fedora", "bkr_info": {"distro_tags": ["nightly_composes"], "distro_name": "Fedora-Rawhide-20201112.n.0"}, "arches": ["x86_64"], "version": "34", "build": "Fedora-Rawhide-20201112.n.0"}
-
-{"product": "RHEL", "bkr_info": {"distro_tags": ["RC-1.1"], "distro_name": "RHEL-8.3.0-20201009.2"}, "arches": ["aarch64", "x86_64", "s390x", "ppc64le"], "version": "8.3", "build": "RHEL-8.3.0-20201009.2"}
-
-
-FY20 monthly report - July
---------------------------
-Libvirt CI requirement
-    - add add ci parameter to reserve the beaker machine with the minimum number of cpu cores
-    - support to reserve two machines with different versions of RHEL
-    - use virt-v2v to replace the libguestfs as the trigger package of v2v test in rhel8
-
-Libvirt CI failure fix and Jenkins job maintains
-    - debug and fix image build and tree signoff task auto
-    - fix cross migration fails from RHEL-alt 7.6 to RHEL 7.8
-    - debug and fix image build and tree signoff task auto
-    - fix v2v rhel7.8.z acceptance testing failed
-    - fix failure of cloning libvirt-ci from git.host
-    - enable split daemon in resource host for migration test
-
-add CI job for libvirt-python test on Fedora
-    - add libvirt-python job of fedora to jenkins - done
-    - create image build job for Fedora - done
-    - enable ci to run libvirt-python job on Fedora - in process
-
-Debug and fix automation case jira issue
-
-Libvirt-ci & micro-service PR review
-
-take CI questions consulting for team members
-
-
-
-
-
-FY20 monthly report - June
---------------------------
-Libvirt CI requirement
-    - extend ci test case rerun function to make more test env detection and restore
-    - support ci job interface to select libvirt service daemon/modular daemon
-    - fix netxml define random failure
-
-Libvirt CI failure fix and Jenkins job maintains
-    - jenkins job fail to get the param enable_rdt
-    - fix the TEIID db connection issue
-    - fix auto trigger failure of ci RHEL compose
-
-Tech talk about update of libvirt CI document
-
-Debug and fix automation case jira issue
-
-Libvirt-ci & micro-service PR review
-
-take CI questions consulting for team members
-
-
-
-
-
-
-FY20 monthly report - May
----------------------------
-
-
-1. Libvirt CI requirement
-    - Add support to provision 2 beaker host (same arch, but different cpu model, such as P8 and P9) for cross migration job
-    - add "trigger event" in ci message to group ci jobs with the same event
-    - send email notification for job owner and watcher when libvirt ci job finishes
-
-2. Libvirt CI failure fix and Jenkins job maintains
-    - check the gating_staging migration case failure
-    - help to add python3-ovirt-engine-sdk4 into download repo
-    - debug libvirt 8.3 virt module repo creation error
-    - change the way of filterring out migration test and test with special hardware need from scheduler backend
-    - rhel7.9 cases failed by missing pkgs: firewalld, glusterfs*
-
-3. Debug and fix automation case jira issue
-    - debug usb test case faulure and fix tp-libvirt test code issue
-
-4. Interview with candidates for automation QE in Brno
-
-5. Libvirt-ci & micro-service PR review
-
-6. take CI questions consulting for team members
-
-
-
-FY20 monthly report - March
----------------------------
-1. Libvirt CI requirement
-    - Enable libvirt repo to auto download packages to install ceph-common for ppc64le arch
-    - Add --boot uefi option for virt-install for specific job.
-    - ci new 8.3 jobs creation
-    - Test a job with avocado running on python3/rhel7
-
-2. libvirt CI failure fix and Jenkins job maintains
-    - Correct the wrong repo link for RHEL-ALT on s390x
-    - Fix aarch64 gating issue
-    - change av compose signoff job to use the repo in US 
-    - enable libvirt ci runtest job to reconnect github to get the avocado patch
-
-3. debug and fix automation case jira issue
-    - Resolve 6 issues
-
-4. update libvirt ci document
-    - How to manually trigger a job
-    - How to manually trigger AV virt module test
-    - How to manually trigger av_compose signoff test
-    - How to manually trigger only_tree signoff test
-    - How to manually trigger image_build job manually
-    - How to manually trigger a job in different machines
-
-5. Two intern candidates interview
-
-6. Libvirt-ci & micro-service PR review
-
-7. make preparation to share platform all hands meeting FY20Q1
 
 FY20 goal wrap up
 -----------------
@@ -488,65 +245,6 @@ take CI questions consulting for team members
 
 
 
-Libvirt modular daemon
-----------------------
-
-libvirt daemon start/restart
-    - ./libvirt_ci/data/playbooks/tasks/install_guest.yaml
-    - ./libvirt_ci/data/playbooks/tasks/install_packages_beaker.yaml
-    - ./libvirt_ci/data/playbooks/guest_image_builder.yaml
-    - ./libvirt_ci/data/playbooks/prepare_gluster_server.yaml - done
-    - ./libvirt_ci/data/playbooks/bootstrap_avocado_vt_remote.yaml done
-    - ./libvirt_ci/data/playbooks/bootstrap_avocado_vt.yaml - done
-    - ./libvirt_ci/runner/__init__.py: - prepare_run() - utils.restart_service('libvirtd') - done
-
-
-    - ./libvirt_ci/runner/__init__.py: common_services = ['libvirtd', 'nfs', 'iscsid']
-
-
-    
-
-
-libvirt daemon log
-    - ./libvirt_ci/runner/avocado_vt.py - def get_libvirtd_log
-    - ./libvirt_ci/runner/__init__.py:    def get_libvirtd_log(self, test, result):
-
-
-
-./libvirt_ci/state.py:        s_list = ['libvirtd', 'selinux', 'nfs', 'iscsid', 'tgtd']
-./libvirt_ci/state.py:                '/etc/libvirt/libvirtd.conf',
-./libvirt_ci/state.py:                '/etc/sysconfig/libvirtd',
-
-
-install libvirt
-    ./libvirt_ci/env/__init__.py:                cmd = ('yum -y install qemu-kvm qemu-img libvirt\\* '
-
-
-
-
-
-
-
-
-
-
-
-
-
-    def prepare_data(cls):
-        jobs_config_file = os.path.join(
-            config.PATH, 'jobs.yaml')
-        cls.pkg_rules = TriggerRules(['name', 'target', 'package', 'product',
-                                      'arch', 'job_name', 'component'])
-        cls.tree_rules = TriggerRules(['name', 'version', 'arch', 'location'])
-        cls.av_compose_rules = TriggerRules(['name', 'product', 'version', 'arch'])
-        # Iterate all jobs and put them into TriggerRules object
-        for job in JobGenerator(jobs_config_file).jobs():
-            trigger_packages = job.get('trigger-package')
-            if isinstance(trigger_packages, (str, unicode)) and trigger_packages:
-                trigger_packages = trigger_packages.splitlines()
-
-
-
+{"product": "RHEL", "bkr_info": {"distro_tags": ["nightly_composes"], "distro_name": ""}, "arches": ["aarch64", "x86_64", "s390x", "ppc64le"], "version": "8.3", "build": ""}
 
 

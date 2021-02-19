@@ -7,12 +7,10 @@ in ipython console:
 
 data = json.dumps({"product": "RHEL", "version": "8.3", 'message':'{"product": "RHEL", "bkr_info": {"distro_tags": ["RTT_PASSED"], "distro_name": "RHEL-8.3.0-20201009.2"}, "arches": ["aarch64", "x86_64", "s390x", "ppc64le"], "version": "8.3", "build": "RHEL-8.3.0-20201009.2"}'})
 
-
-r = requests.post(service_url, data)
-
-r = requests.post(service_url, data, auth=('ci-ops-central-jenkins', 'tQrYdOHhBqOMJi/k'))
-
-print r.json
+headers = {}
+headers['content-type'] = 'application/json'
+r = requests.post(service_url, data, headers=headers)
+print (r.json)
 
 
 {"product": "RHEL", "bkr_info": {"distro_tags": ["RTT_PASSED"], "distro_name": "RHEL-8.3.0-20200909.1"}, "arches": ["aarch64", "x86_64", "s390x", "ppc64le"], "version": "8.3", "build": "RHEL-8.3.0-20200909.1"}

@@ -10,4 +10,13 @@ libvirt_ci/data/jobs/provision.yaml
     - scripts/clear_venv.sh
 
 
+image build command
+
+virt-install -r 4096 -n image-builder --vcpus=4 --disk path=/var/lib/libvirt/images/image-builder.qcow2 --location=RHEL-9.0.0-20210201.6-x86_64-dvd1.iso --initrd-inject=/root/ks.cfg --extra-args "ks=file:/ks.cfg"
+
+url - http://http://download.eng.pek2.redhat.com/rhel-9/composes/RHEL-9/RHEL-9.0.0-20210201.6/compose/BaseOS/x86_64/os/
+dls_ip - 10.8.2.20
+appstream_url - http://download.eng.pek2.redhat.com/rhel-9/composes/RHEL-9/RHEL-9.0.0-20210201.6/compose/AppStream/x86_64/os/
+
+virt-install -r 4096 -n image-builder --vcpus=4 --disk path=/var/lib/libvirt/images/image-builder.qcow2 --location=/home/RHEL-9.0.0-20210201.6-x86_64-dvd1.iso --initrd-inject=/home/ks.cfg --extra-args "ks=file:/ks.cfg" --console pty --nographics --extra-args console=ttyS0,115200 --noreboot --wait
 

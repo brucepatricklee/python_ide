@@ -1,33 +1,37 @@
-NPIV - to be verified in the latest run
+NPIV -  6.0.0-33.module+el8.4.0+9552+03f8b989.x86_64
 ------------------------------------------
-npiv - https://projects.engineering.redhat.com/browse/LIBVIRTEIG-1452
+8.3 npiv - https://projects.engineering.redhat.com/browse/LIBVIRTEIG-1452
+8.4 npiv - av 2 failure in debugging
+8.4 npiv - rhel 2 failures in debugging
 
-
-VIRTIO_RNG - feature owner yanqzhan yafu
+VIRTIO_RNG - yanqzhan yafu
 ------------------------------------------
-virtio_rng - 1
-test case issue need to clean up snapshot LIBVIRTAT-7558
+8.3 virtio_rng - pass
+8.4 virtio_rng - av pass
+8.4 virtio_rng - rhel pass
 
-
-TPM_EMULATOR
+TPM_EMULATOR - lizhu ----- NEED DEBUG !!!
 ------------------------------------------
-tpm_emulator - pass
+8.3 tpm_emulator - pass
+8.4 tpm_emulator - av failure 4 !!!!!!!!!!!!!!!!!!!!
+8.4 tpm_emulator - only the av stream module include swtpm packages and support this feature
 
-
-TPM_PASSTHROUGH
-------------------------------------------
-tpm_passthrough - pass
-
-
-NFV
-------------------------------------------
-nfv - pass
-
-
-
-USB - feature owner
+TPM_PASSTHROUGH - lizhu
 ----------------------------------------
-61 has hardware issue , try 66
+8.3 tpm_passthrough - pass
+8.4 tpm_passthrough - av pass
+8.4 tpm_passthrough - rhel xxxxx
 
-usbredir-server
 
+NFV - chhu
+----------------------------------------
+8.3 nfv - pass
+8.4 nfv - rhel pass
+8.4 nvf - av pass
+
+
+USB - feature owner - specail hardware
+----------------------------------------
+8.3 usb - pass
+8.4 usb - rhel pass
+8.4 usb - av pass

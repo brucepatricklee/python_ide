@@ -1,0 +1,10 @@
+
+RHEL-9 & RHEL-8.4
+    - From RHEL-8.4, stream renamed to av
+    - From RHEL-8.6, rhel and av stream become one thing, no need to seperate them
+    - 
+
+Thinking of gating test in CentOS Stream
+
+
+
